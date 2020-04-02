@@ -1,0 +1,40 @@
+{
+  "project_info": {
+    "project_number": "524102971637",
+    "firebase_url": "https://radiant-mason-90220.firebaseio.com",
+    "project_id": "radiant-mason-90220",
+    "storage_bucket": "radiant-mason-90220.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:524102971637:android:e34c05d2253c025ad9d5bc",
+        "android_client_info": {
+          "package_name": "com.myjob.jobclub"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "524102971637-8p6b0raojk75rh9unr25rkdfogfpunt9.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCOUIYuFzUvDcuXNkE26-WjsBVUCcvM4Rw"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "524102971637-8p6b0raojk75rh9unr25rkdfogfpunt9.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
