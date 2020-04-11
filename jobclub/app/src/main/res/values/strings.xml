@@ -1,3 +1,7 @@
 <resources>
     <string name="app_name">JobClub</string>
+    <string name="upload_photo">Upload photo</string>
+    <string name="job_title">Job title</string>
+    <string name="job_description">Job description</string>
+    <string name="add">+</string>
 </resources>

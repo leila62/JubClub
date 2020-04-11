@@ -1,14 +1,15 @@
 package com.myjob.jobclub.ui.post.model
 
-import android.util.Log
-import androidx.lifecycle.LiveData
-import androidx.lifecycle.MutableLiveData
-import androidx.lifecycle.ViewModel
-import androidx.lifecycle.ViewModelProvider
+import androidx.lifecycle.*
+import com.google.firebase.firestore.FieldValue
 import com.google.firebase.firestore.ktx.firestore
 import com.google.firebase.ktx.Firebase
+import com.google.firebase.storage.ktx.storage
 import com.myjob.jobclub.ui.post.viewModel.PostViewModel
 import com.myjob.jobclub.ui.user.model.RequestResult
+import java.io.File
+import java.io.FileInputStream
+import java.util.*
 
 class PostModel {
     companion object {
@@ -18,17 +19,22 @@ class PostModel {
     val db = Firebase.firestore
 
     fun fetchPosts(): LiveData<RequestResult> {
+        val storageRef = Firebase.storage.reference
+
         return MutableLiveData<RequestResult>().apply {
             db.collection(POSTS)
                     .get()
                     .addOnSuccessListener { result ->
-                        val posts: ArrayList<PostEntity> = arrayListOf()
-
                         for (document in result) {
                             val post = document.toObject(PostEntity::class.java)
-                            posts.add(post)
+                            post.photo?.let { photo ->
+                                storageRef.child(photo).downloadUrl
+                                        .addOnSuccessListener {
+                                            post.photoUri = it
+                                        }
+                            }
+                            this.value = RequestResult.onSuccess(post)
                         }
-                        this.value = RequestResult.onSuccess(posts)
                     }
                     .addOnFailureListener { exception ->
                         this.value = RequestResult.onFailure(exception)
@@ -36,20 +42,69 @@ class PostModel {
         }
     }
 
-    private fun writeDataOnFirestore() {
 
-        val post = HashMap<String, Any>()
-        post["title"] = "REZA"
-        post["description"] = "NETWORK Admin"
-        db.collection(POSTS).document("posts_list")
-                .set(post)
-                .addOnSuccessListener {
-                    Log.d("SETTING DATAAA", "DocumentSnapshot successfully written!")
+    fun getPhotoUrl(photoUrl: String): LiveData<RequestResult> {
+        val storageRef = Firebase.storage.reference
 
-                }.addOnFailureListener { e ->
-                    Log.e("ERRROR", "Error writing document", e)
-                }
+        return MutableLiveData<RequestResult>().apply {
+            storageRef.child(photoUrl).downloadUrl
+                    .addOnSuccessListener {
+                        this.value = RequestResult.onSuccess(it)
+                    }
+                    .addOnFailureListener {
+                        this.value = RequestResult.onFailure(it)
+                    }
+        }
     }
+
+
+    fun addNewPost(postEntity: PostEntity, imageFile: File?): LiveData<RequestResult> {
+        val timeStamp = FieldValue.serverTimestamp().toString()
+        postEntity.createdDate = timeStamp
+        postEntity.id = timeStamp
+
+        return Transformations.switchMap(uploadPhoto(imageFile, "${timeStamp}/${imageFile?.name}")) { requestResult ->
+            MutableLiveData<RequestResult>().apply {
+                when (requestResult) {
+                    is RequestResult.onSuccess<*> -> {
+                        postEntity.photo = requestResult.data as String
+                        db.collection(POSTS).document(timeStamp)
+                                .set(postEntity)
+                                .addOnSuccessListener {
+                                    this.value = RequestResult.onSuccess("Added Successfully")
+
+                                }.addOnFailureListener { exception ->
+                                    this.value = RequestResult.onFailure(exception)
+                                }
+                    }
+                }
+            }
+        }
+    }
+
+
+    private fun uploadPhoto(imageFile: File?, photoUrl: String): LiveData<RequestResult> {
+
+        val storageRef = Firebase.storage.reference
+        return MutableLiveData<RequestResult>().apply {
+            imageFile?.let {
+                val mountainsRef = storageRef.child(it.name)
+                val mountainImagesRef = storageRef.child(photoUrl)
+
+                mountainsRef.name == mountainImagesRef.name
+                mountainsRef.path == mountainImagesRef.path
+                val stream = FileInputStream(imageFile)
+                val uploadTask = mountainsRef.putStream(stream)
+
+                uploadTask.addOnFailureListener {
+                    this.value = RequestResult.onFailure(it)
+                }.addOnSuccessListener {
+                    this.value = RequestResult.onSuccess(it.metadata?.path)
+                }
+            }
+        }
+    }
+
 
     class Factory(private val model: PostModel) : ViewModelProvider.Factory {
         @Suppress("UNCHECKED_CAST")
